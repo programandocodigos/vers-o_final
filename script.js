@@ -20,135 +20,102 @@ const countCorrectEl = document.getElementById('count-correct');
 const countWrongEl = document.getElementById('count-wrong');
 const totalScoreEl = document.getElementById('total-score');
 
-// Load the Teachable Machine model
+// Carrega o modelo com sistema anti-cache
 async function loadModel() {
     try {
-        console.log('Loading Teachable Machine model...');
-        const checkpointURL = MODEL_URL + "model.json";
-        const metadataURL = MODEL_URL + "metadata.json";
+        console.log('Iniciando o carregamento do modelo TM...');
+        const timestamp = new Date().getTime();
+        const checkpointURL = MODEL_URL + "model.json?v=" + timestamp;
+        const metadataURL = MODEL_URL + "metadata.json?v=" + timestamp;
 
         model = await tmImage.load(checkpointURL, metadataURL);
-        console.log('Model loaded. Classes:', model.getTotalClasses());
+        console.log('Modelo carregado com sucesso!');
     } catch (error) {
-        console.error('Error loading model:', error);
-        labelPrediction.innerText = "Erro ao carregar o modelo TM";
+        console.error('Erro ao carregar o modelo:', error);
+        labelPrediction.innerText = "Erro na conexão com Teachable Machine";
     }
 }
 
 loadModel();
 
-// Handle clicks and drag/drop
+// Eventos de Upload
 dropArea.addEventListener('click', () => fileInput.click());
-
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) handleFile(file);
-});
-
-dropArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropArea.style.borderColor = 'var(--primary)';
-});
-
-dropArea.addEventListener('dragleave', () => {
-    dropArea.style.borderColor = 'var(--glass-border)';
-});
-
-dropArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-});
+fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.style.borderColor = 'var(--primary)'; });
+dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = 'var(--glass-border)'; });
+dropArea.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
 
 async function handleFile(file) {
-    if (!file.type.startsWith('image/')) return;
-
-    // Show preview
+    if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
         previewImg.src = e.target.result;
         previewImg.hidden = false;
         uploadContent.hidden = true;
-        
         await classifyImage();
     };
     reader.readAsDataURL(file);
 }
 
 async function classifyImage() {
-    if (!model) {
-        alert("O modelo ainda está carregando.");
-        return;
-    }
-
+    if (!model) return alert("IA carregando...");
+    
     loadingOverlay.classList.remove('hidden');
     resultArea.classList.add('hidden');
 
     try {
-        // Teachable Machine Prediction
         const predictions = await model.predict(previewImg);
         
-        // Find the class with the highest probability
-        let topResult = predictions[0];
-        for (let i = 1; i < predictions.length; i++) {
-            if (predictions[i].probability > topResult.probability) {
-                topResult = predictions[i];
+        // Encontra o melhor resultado
+        let topIndex = 0;
+        let highestProb = 0;
+        for (let i = 0; i < predictions.length; i++) {
+            if (predictions[i].probability > highestProb) {
+                highestProb = predictions[i].probability;
+                topIndex = i;
             }
         }
 
-        const probability = (topResult.probability * 100).toFixed(1);
-        let className = topResult.className;
-        console.log("IA detectou a classe original:", className); // Log fundamental para debug
+        const topResult = predictions[topIndex];
+        const probPct = (topResult.probability * 100).toFixed(0);
+        const rawName = topResult.className.toLowerCase();
 
-        // Mapeamento das classes do Teachable Machine (Ultra-Robusto)
-        const classMap = {
-            "class 1": "Cachorro",
-            "class 2": "Gato",
-            "class 1 ": "Cachorro",
-            "class 2 ": "Gato",
-            "class1": "Cachorro",
-            "class2": "Gato",
-            "cachorro": "Cachorro",
-            "gato": "Gato"
-        };
-
-        // Normalização: remove espaços e passa para minúsculo
-        let normalizedKey = className.toLowerCase().trim();
-        let displayName = classMap[normalizedKey] || className;
-        
-        console.log("Nome exibido no programa:", displayName);
-
-        // Emoji mapping
+        // LÓGICA INFALÍVEL: Tenta por Nome, se falhar usa o Index (0=Cachorro, 1=Gato)
+        let displayName = "Desconhecido";
         let icon = "🧐";
-        if (displayName.toLowerCase().includes("gato")) icon = "🐾";
-        if (displayName.toLowerCase().includes("cachorro")) icon = "🐶";
 
-        labelPrediction.innerText = `${icon} ${displayName}`;
-        confidenceBar.style.width = `${probability}%`;
+        if (rawName.includes("gato") || topIndex === 1) {
+            displayName = "Gato";
+            icon = "🐾";
+        } else if (rawName.includes("cacho") || topIndex === 0) {
+            displayName = "Cachorro";
+            icon = "🐶";
+        }
+
+        labelPrediction.innerText = `${icon} ${displayName} (${probPct}%)`;
+        confidenceBar.style.width = `${probPct}%`;
         
         loadingOverlay.classList.add('hidden');
         resultArea.classList.remove('hidden');
+        console.log("Resultado final:", displayName, probPct + "%");
 
     } catch (error) {
         console.error("Erro na classificação:", error);
         loadingOverlay.classList.add('hidden');
-        alert("Erro ao analisar imagem.");
     }
 }
 
-// User Feedback
+// Sistema de Pontuação atualizado para +1 e -1
 btnCorrect.addEventListener('click', () => {
-    console.log("Botão SIM clicado"); // Log para teste
     correctCount++;
-    totalScore += 10;
+    totalScore += 1;
     updateStats();
     resetUI();
 });
 
 btnWrong.addEventListener('click', () => {
-    console.log("Botão NÃO clicado"); // Log para teste
     wrongCount++;
-    totalScore -= 10;
+    totalScore -= 1;
     updateStats();
     resetUI();
 });
@@ -157,20 +124,14 @@ function updateStats() {
     countCorrectEl.innerText = correctCount;
     countWrongEl.innerText = wrongCount;
     totalScoreEl.innerText = totalScore;
-    
-    // Animação simples no placar
-    totalScoreEl.style.transform = "scale(1.2)";
-    setTimeout(() => {
-        totalScoreEl.style.transform = "scale(1)";
-    }, 200);
+    totalScoreEl.style.transform = "scale(1.3)";
+    setTimeout(() => { totalScoreEl.style.transform = "scale(1)"; }, 200);
 }
 
 function resetUI() {
-    // Pequeno delay para o usuário ver o resultado antes de limpar
     setTimeout(() => {
         previewImg.hidden = true;
         uploadContent.hidden = false;
         resultArea.classList.add('hidden');
-        previewImg.src = "";
-    }, 1500); // Aumentado para 1.5s para facilitar a visualização do acerto/erro
+    }, 1200);
 }
