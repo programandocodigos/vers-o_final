@@ -3,135 +3,128 @@ let correctCount = 0;
 let wrongCount = 0;
 let totalScore = 0;
 
+// LINK FINAL DO USUÁRIO
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/oMDLwvijt/";
 
-const dropArea = document.getElementById('drop-area');
-const fileInput = document.getElementById('file-input');
 const previewImg = document.getElementById('preview-image');
-const resultArea = document.getElementById('result-area');
 const labelPrediction = document.getElementById('label-prediction');
 const confidenceBar = document.getElementById('confidence-bar');
 const loadingOverlay = document.getElementById('loading-overlay');
-const uploadContent = document.querySelector('.upload-content');
-
-const btnCorrect = document.getElementById('btn-correct');
-const btnWrong = document.getElementById('btn-wrong');
+const resultArea = document.getElementById('result-area');
+const totalScoreEl = document.getElementById('total-score');
 const countCorrectEl = document.getElementById('count-correct');
 const countWrongEl = document.getElementById('count-wrong');
-const totalScoreEl = document.getElementById('total-score');
 
-// Carrega o modelo com sistema anti-cache
-async function loadModel() {
+// Carrega o modelo
+async function init() {
     try {
-        console.log('Iniciando o carregamento do modelo TM...');
-        const timestamp = new Date().getTime();
-        const checkpointURL = MODEL_URL + "model.json?v=" + timestamp;
-        const metadataURL = MODEL_URL + "metadata.json?v=" + timestamp;
-
+        const checkpointURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
         model = await tmImage.load(checkpointURL, metadataURL);
-        console.log('Modelo carregado com sucesso!');
-    } catch (error) {
-        console.error('Erro ao carregar o modelo:', error);
-        labelPrediction.innerText = "Erro na conexão com Teachable Machine";
+        console.log("IA PRONTA (v5.0)");
+    } catch (e) {
+        console.error(e);
+        labelPrediction.innerText = "Erro ao carregar IA";
     }
 }
+init();
 
-loadModel();
+// Upload e Drag-and-Drop
+const dropArea = document.getElementById('drop-area');
+const fileInput = document.getElementById('file-input');
+const uploadContent = document.querySelector('.upload-content');
 
-// Eventos de Upload
-dropArea.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.style.borderColor = 'var(--primary)'; });
-dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = 'var(--glass-border)'; });
-dropArea.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+dropArea.onclick = () => fileInput.click();
+fileInput.onchange = (e) => handleFile(e.target.files[0]);
+dropArea.ondragover = (e) => { e.preventDefault(); dropArea.style.borderColor = "#6366f1"; };
+dropArea.ondragleave = () => { dropArea.style.borderColor = "rgba(255,255,255,0.1)"; };
+dropArea.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
-async function handleFile(file) {
+function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
         previewImg.src = e.target.result;
         previewImg.hidden = false;
         uploadContent.hidden = true;
-        await classifyImage();
+        await classify();
     };
     reader.readAsDataURL(file);
 }
 
-async function classifyImage() {
-    if (!model) return alert("IA carregando...");
-    
+// O JULGAMENTO (Função Corrigida)
+async function classify() {
+    if (!model) return;
     loadingOverlay.classList.remove('hidden');
     resultArea.classList.add('hidden');
 
     try {
         const predictions = await model.predict(previewImg);
-        
-        // Encontra o melhor resultado
-        let topIndex = 0;
-        let highestProb = 0;
-        for (let i = 0; i < predictions.length; i++) {
-            if (predictions[i].probability > highestProb) {
-                highestProb = predictions[i].probability;
-                topIndex = i;
+        console.log("Previsões brutas da IA:", predictions);
+
+        // Encontra o vencedor real comparando as probabilidades
+        let winner = predictions[0];
+        for (let i = 1; i < predictions.length; i++) {
+            if (predictions[i].probability > winner.probability) {
+                winner = predictions[i];
             }
         }
 
-        const topResult = predictions[topIndex];
-        const probPct = (topResult.probability * 100).toFixed(0);
-        const rawName = topResult.className.toLowerCase();
+        const name = winner.className.toLowerCase();
+        const score = (winner.probability * 100).toFixed(0);
 
-        // LÓGICA INFALÍVEL: Tenta por Nome, se falhar usa o Index (0=Cachorro, 1=Gato)
-        let displayName = "Desconhecido";
+        // Mapeamento à prova de falhas
+        let display = "Desconhecido";
         let icon = "🧐";
 
-        if (rawName.includes("gato") || topIndex === 1) {
-            displayName = "Gato";
+        // Se o nome contiver 'gato', 'cat' ou 'class 2', é Gato
+        if (name.includes("gato") || name.includes("cat") || name.includes("2")) {
+            display = "Gato";
             icon = "🐾";
-        } else if (rawName.includes("cacho") || topIndex === 0) {
-            displayName = "Cachorro";
+        } 
+        // Se o nome contiver 'cacho', 'dog' ou 'class 1', é Cachorro
+        else if (name.includes("cacho") || name.includes("dog") || name.includes("1")) {
+            display = "Cachorro";
             icon = "🐶";
+        } else {
+            // Se não bater com nada, usa o nome original que você deu no TM
+            display = winner.className;
         }
 
-        labelPrediction.innerText = `${icon} ${displayName} (${probPct}%)`;
-        confidenceBar.style.width = `${probPct}%`;
+        labelPrediction.innerText = `${icon} ${display} (${score}%)`;
+        confidenceBar.style.width = score + "%";
         
         loadingOverlay.classList.add('hidden');
         resultArea.classList.remove('hidden');
-        console.log("Resultado final:", displayName, probPct + "%");
 
-    } catch (error) {
-        console.error("Erro na classificação:", error);
+    } catch (err) {
+        console.error(err);
         loadingOverlay.classList.add('hidden');
     }
 }
 
-// Sistema de Pontuação atualizado para +1 e -1
-btnCorrect.addEventListener('click', () => {
+// FEEDBACK E PONTOS (+1 e -1)
+document.getElementById('btn-correct').onclick = () => {
     correctCount++;
     totalScore += 1;
-    updateStats();
-    resetUI();
-});
+    refreshUI();
+};
 
-btnWrong.addEventListener('click', () => {
+document.getElementById('btn-wrong').onclick = () => {
     wrongCount++;
     totalScore -= 1;
-    updateStats();
-    resetUI();
-});
+    refreshUI();
+};
 
-function updateStats() {
+function refreshUI() {
     countCorrectEl.innerText = correctCount;
     countWrongEl.innerText = wrongCount;
     totalScoreEl.innerText = totalScore;
-    totalScoreEl.style.transform = "scale(1.3)";
-    setTimeout(() => { totalScoreEl.style.transform = "scale(1)"; }, 200);
-}
-
-function resetUI() {
+    
+    // Reset para próxima foto
     setTimeout(() => {
         previewImg.hidden = true;
         uploadContent.hidden = false;
         resultArea.classList.add('hidden');
-    }, 1200);
+    }, 1000);
 }
