@@ -2,6 +2,8 @@ let model;
 let correctCount = 0;
 let wrongCount = 0;
 
+const MODEL_URL = "https://teachablemachine.withgoogle.com/models/oMDLwvijt/";
+
 const dropArea = document.getElementById('drop-area');
 const fileInput = document.getElementById('file-input');
 const previewImg = document.getElementById('preview-image');
@@ -16,15 +18,18 @@ const btnWrong = document.getElementById('btn-wrong');
 const countCorrectEl = document.getElementById('count-correct');
 const countWrongEl = document.getElementById('count-wrong');
 
-// Load the model on start
+// Load the Teachable Machine model
 async function loadModel() {
     try {
-        console.log('Loading model...');
-        model = await mobilenet.load();
-        console.log('Model loaded.');
+        console.log('Loading Teachable Machine model...');
+        const checkpointURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
+
+        model = await tmImage.load(checkpointURL, metadataURL);
+        console.log('Model loaded. Classes:', model.getTotalClasses());
     } catch (error) {
         console.error('Error loading model:', error);
-        labelPrediction.innerText = "Erro ao carregar IA";
+        labelPrediction.innerText = "Erro ao carregar o seu modelo TM";
     }
 }
 
@@ -70,7 +75,7 @@ async function handleFile(file) {
 
 async function classifyImage() {
     if (!model) {
-        alert("A IA ainda está carregando, por favor aguarde um segundo.");
+        alert("O seu modelo ainda está carregando.");
         return;
     }
 
@@ -78,26 +83,26 @@ async function classifyImage() {
     resultArea.classList.add('hidden');
 
     try {
-        // AI Prediction
-        const predictions = await model.classify(previewImg);
+        // Teachable Machine Prediction
+        const predictions = await model.predict(previewImg);
         
-        // MobileNet returns multiple results. We look for the top one.
-        const topResult = predictions[0];
-        const label = topResult.className.toLowerCase();
-        const probability = (topResult.probability * 100).toFixed(1);
-
-        // Simple check to identify if it's a cat or dog (MobileNet labels are specific breeds)
-        let displayLabel = "Não identifiquei gato ou cachorro";
-        if (label.includes('cat') || label.includes('kitten')) {
-            displayLabel = "🐾 É um Gato!";
-        } else if (label.includes('dog') || label.includes('puppy') || label.includes('terrier') || label.includes('retriever')) {
-            displayLabel = "🐶 É um Cachorro!";
-        } else {
-            // Fallback to the top object identified
-            displayLabel = `Parece ser: ${topResult.className.split(',')[0]}`;
+        // Find the class with the highest probability
+        let topResult = predictions[0];
+        for (let i = 1; i < predictions.length; i++) {
+            if (predictions[i].probability > topResult.probability) {
+                topResult = predictions[i];
+            }
         }
 
-        labelPrediction.innerText = displayLabel;
+        const probability = (topResult.probability * 100).toFixed(1);
+        let className = topResult.className;
+
+        // Emoji mapping based on common names or generic classes
+        let icon = "🧐";
+        if (className.toLowerCase().includes("cat") || className.toLowerCase().includes("gato")) icon = "🐾";
+        if (className.toLowerCase().includes("dog") || className.toLowerCase().includes("cachorro")) icon = "🐶";
+
+        labelPrediction.innerText = `${icon} ${className}`;
         confidenceBar.style.width = `${probability}%`;
         
         loadingOverlay.classList.add('hidden');
@@ -106,7 +111,7 @@ async function classifyImage() {
     } catch (error) {
         console.error("Erro na classificação:", error);
         loadingOverlay.classList.add('hidden');
-        alert("Houve um erro ao analisar a imagem.");
+        alert("Houve um erro ao analisar a imagem com o seu modelo.");
     }
 }
 
