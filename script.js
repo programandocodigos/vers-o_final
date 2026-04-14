@@ -118,12 +118,14 @@ async function classifyImage() {
 // User Feedback
 btnCorrect.addEventListener('click', () => {
     correctCount++;
+    totalScore += 10;
     updateStats();
     resetUI();
 });
 
 btnWrong.addEventListener('click', () => {
     wrongCount++;
+    totalScore -= 10;
     updateStats();
     resetUI();
 });
@@ -131,6 +133,13 @@ btnWrong.addEventListener('click', () => {
 function updateStats() {
     countCorrectEl.innerText = correctCount;
     countWrongEl.innerText = wrongCount;
+    totalScoreEl.innerText = totalScore;
+    
+    // Add a little animation to the score
+    totalScoreEl.style.transform = "scale(1.2)";
+    setTimeout(() => {
+        totalScoreEl.style.transform = "scale(1)";
+    }, 200);
 }
 
 function resetUI() {
