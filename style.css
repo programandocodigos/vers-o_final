@@ -148,17 +148,17 @@ header p {
 
 .prediction-chip {
     display: inline-block;
-    padding: 1rem 2rem;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 1.2rem 2.5rem;
+    background: rgba(16, 185, 129, 0.2); /* Fundo verde mais visível */
+    border: 2px solid var(--success);
     border-radius: 100px;
     margin-bottom: 2rem;
     animation: pulse 2s infinite;
 }
 
 #label-prediction {
-    font-size: 1.7rem;
-    font-weight: 700;
+    font-size: 2rem; /* Aumentado para destaque */
+    font-weight: 800;
     color: var(--success);
     text-transform: capitalize;
     display: block;

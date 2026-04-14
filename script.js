@@ -1,6 +1,7 @@
 let model;
 let correctCount = 0;
 let wrongCount = 0;
+let totalScore = 0;
 
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/oMDLwvijt/";
 
@@ -17,6 +18,7 @@ const btnCorrect = document.getElementById('btn-correct');
 const btnWrong = document.getElementById('btn-wrong');
 const countCorrectEl = document.getElementById('count-correct');
 const countWrongEl = document.getElementById('count-wrong');
+const totalScoreEl = document.getElementById('total-score');
 
 // Load the Teachable Machine model
 async function loadModel() {
@@ -29,7 +31,7 @@ async function loadModel() {
         console.log('Model loaded. Classes:', model.getTotalClasses());
     } catch (error) {
         console.error('Error loading model:', error);
-        labelPrediction.innerText = "Erro ao carregar o seu modelo TM";
+        labelPrediction.innerText = "Erro ao carregar o modelo TM";
     }
 }
 
@@ -75,7 +77,7 @@ async function handleFile(file) {
 
 async function classifyImage() {
     if (!model) {
-        alert("O seu modelo ainda está carregando.");
+        alert("O modelo ainda está carregando.");
         return;
     }
 
@@ -97,14 +99,19 @@ async function classifyImage() {
         const probability = (topResult.probability * 100).toFixed(1);
         let className = topResult.className;
 
-        // Mapeamento das classes do Teachable Machine
+        // Mapeamento das classes do Teachable Machine (Normalizado)
         const classMap = {
-            "Class 1": "Cachorro",
-            "Class 2": "Gato"
+            "class 1": "Cachorro",
+            "class 2": "Gato",
+            "class1": "Cachorro",
+            "class2": "Gato",
+            "cachorro": "Cachorro",
+            "gato": "Gato"
         };
 
-        // Usa o mapeamento se existir, senão usa o nome original
-        let displayName = classMap[className] || className;
+        // Normalização simples: remove espaços extras e passa para minúsculo
+        let normalizedKey = className.trim().toLowerCase();
+        let displayName = classMap[normalizedKey] || className;
 
         // Emoji mapping
         let icon = "🧐";
@@ -120,7 +127,7 @@ async function classifyImage() {
     } catch (error) {
         console.error("Erro na classificação:", error);
         loadingOverlay.classList.add('hidden');
-        alert("Houve um erro ao analisar a imagem com o seu modelo.");
+        alert("Erro ao analisar imagem.");
     }
 }
 
@@ -144,7 +151,7 @@ function updateStats() {
     countWrongEl.innerText = wrongCount;
     totalScoreEl.innerText = totalScore;
     
-    // Add a little animation to the score
+    // Animação simples no placar
     totalScoreEl.style.transform = "scale(1.2)";
     setTimeout(() => {
         totalScoreEl.style.transform = "scale(1)";
@@ -152,10 +159,11 @@ function updateStats() {
 }
 
 function resetUI() {
+    // Pequeno delay para o usuário ver o resultado antes de limpar
     setTimeout(() => {
         previewImg.hidden = true;
         uploadContent.hidden = false;
         resultArea.classList.add('hidden');
         previewImg.src = "";
-    }, 500);
+    }, 1500); // Aumentado para 1.5s para facilitar a visualização do acerto/erro
 }
