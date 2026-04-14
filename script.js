@@ -133,6 +133,7 @@ async function classifyImage() {
 
 // User Feedback
 btnCorrect.addEventListener('click', () => {
+    console.log("Botão SIM clicado"); // Log para teste
     correctCount++;
     totalScore += 10;
     updateStats();
@@ -140,6 +141,7 @@ btnCorrect.addEventListener('click', () => {
 });
 
 btnWrong.addEventListener('click', () => {
+    console.log("Botão NÃO clicado"); // Log para teste
     wrongCount++;
     totalScore -= 10;
     updateStats();
