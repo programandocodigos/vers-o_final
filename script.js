@@ -98,20 +98,25 @@ async function classifyImage() {
 
         const probability = (topResult.probability * 100).toFixed(1);
         let className = topResult.className;
+        console.log("IA detectou a classe original:", className); // Log fundamental para debug
 
-        // Mapeamento das classes do Teachable Machine (Normalizado)
+        // Mapeamento das classes do Teachable Machine (Ultra-Robusto)
         const classMap = {
             "class 1": "Cachorro",
             "class 2": "Gato",
+            "class 1 ": "Cachorro",
+            "class 2 ": "Gato",
             "class1": "Cachorro",
             "class2": "Gato",
             "cachorro": "Cachorro",
             "gato": "Gato"
         };
 
-        // Normalização simples: remove espaços extras e passa para minúsculo
-        let normalizedKey = className.trim().toLowerCase();
+        // Normalização: remove espaços e passa para minúsculo
+        let normalizedKey = className.toLowerCase().trim();
         let displayName = classMap[normalizedKey] || className;
+        
+        console.log("Nome exibido no programa:", displayName);
 
         // Emoji mapping
         let icon = "🧐";
