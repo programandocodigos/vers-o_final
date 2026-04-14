@@ -97,12 +97,21 @@ async function classifyImage() {
         const probability = (topResult.probability * 100).toFixed(1);
         let className = topResult.className;
 
-        // Emoji mapping based on common names or generic classes
-        let icon = "🧐";
-        if (className.toLowerCase().includes("cat") || className.toLowerCase().includes("gato")) icon = "🐾";
-        if (className.toLowerCase().includes("dog") || className.toLowerCase().includes("cachorro")) icon = "🐶";
+        // Mapeamento das classes do Teachable Machine
+        const classMap = {
+            "Class 1": "Cachorro",
+            "Class 2": "Gato"
+        };
 
-        labelPrediction.innerText = `${icon} ${className}`;
+        // Usa o mapeamento se existir, senão usa o nome original
+        let displayName = classMap[className] || className;
+
+        // Emoji mapping
+        let icon = "🧐";
+        if (displayName.toLowerCase().includes("gato")) icon = "🐾";
+        if (displayName.toLowerCase().includes("cachorro")) icon = "🐶";
+
+        labelPrediction.innerText = `${icon} ${displayName}`;
         confidenceBar.style.width = `${probability}%`;
         
         loadingOverlay.classList.add('hidden');
