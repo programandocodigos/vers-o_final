@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gato ou Cachorro? | IA Classifier</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <main class="container">
+        <header>
+            <h1>Gato<span> ou </span>Cachorro?</h1>
+            <p>Faça o upload de uma foto e nossa IA dirá o que é!</p>
+        </header>
+
+        <section class="card glass">
+            <div id="drop-area" class="upload-zone">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <div class="upload-content">
+                    <div class="icon-container">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                    </div>
+                    <p>Arraste uma imagem ou <span>clique aqui</span></p>
+                </div>
+                <img id="preview-image" src="" alt="Preview" hidden>
+            </div>
+
+            <div id="result-area" class="result-area hidden">
+                <div class="prediction-chip">
+                    <span id="label-prediction">Analisando...</span>
+                    <div id="confidence-bar" class="confidence-bar"></div>
+                </div>
+
+                <div class="feedback-section">
+                    <p>A IA acertou?</p>
+                    <div class="btn-group">
+                        <button id="btn-correct" class="btn btn-success">
+                            <span>Sim, acertou!</span>
+                            <span class="icon">😊</span>
+                        </button>
+                        <button id="btn-wrong" class="btn btn-error">
+                            <span>Não, errou!</span>
+                            <span class="icon">😕</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="stats" class="stats-counter">
+                    <p>Seu Histórico:</p>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-value" id="count-correct">0</span>
+                            <span class="stat-label">Acertos</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="count-wrong">0</span>
+                            <span class="stat-label">Erros</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <p>A IA está pensando...</p>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
